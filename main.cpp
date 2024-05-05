@@ -330,12 +330,11 @@ void write_graph_to_file(const string& filename, Graph& graph) {
         cout << "Error: Unable to open file: " << filename << endl;
         return;
     }
-    unordered_map<string, vector<pair<string, pair<string, int>>>>::iterator it = graph.adj_list.begin();
-    while (it != graph.adj_list.end()) {
-        outdata << it->first << " ";
-        for (int i = 0; i < it->second.size(); i++) {
-            outdata << it->second[i].first << " " << it->second[i].second.first;
-            outdata << " " << it->second[i].second.first << endl;
+    for (const auto& item : graph.adj_list) {
+        outdata << item.first << " ";
+        for (int i = 0; i < item.second.size(); i++) {
+            outdata << item.second[i].first << " " << item.second[i].second.first;
+            outdata << " " << item.second[i].second.second << endl;
         }
     }
     outdata.close();
