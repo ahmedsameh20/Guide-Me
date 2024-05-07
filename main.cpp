@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <algorithm> // for std::transform
 #include <cctype>
-#include<string>
+#include <string>
 #include <fstream> // reading and writing files 
 #include <sstream>
 using namespace std;
@@ -21,60 +21,69 @@ class Graph {
 public:
     unordered_map<string, vector<pair<string, pair<string, int>>>> adj_list;
 
-    void add_edge(const string& city1, const string& city2, const string& transport_type, const int& price) {
-        // 3ashan el graph undirected graph
-        adj_list[to_lower(city1)].emplace_back(to_lower(city2), make_pair(transport_type, price));
-        adj_list[to_lower(city2)].emplace_back(to_lower(city1), make_pair(transport_type, price));
+    // Function to convert string to lowercase
+    string to_lower(const string& str) {
+        string lower_str = str;
+        transform(lower_str.begin(), lower_str.end(), lower_str.begin(), ::tolower);
+        return lower_str;
     }
 
-    void bfs(const string& start_city) {
-        string lowercase_city = to_lower(start_city);
-        if (adj_list.find(lowercase_city) == adj_list.end()) {
-            cout << "Error: The entered city does not exist in the graph." << endl;
+    void add_edge(const string& city1, const string& city2, const string& transport_type, const int& price) {
+        // Add bidirectional connection between city1 and city2
+        adj_list[to_lower(city1)].emplace_back(to_lower(city2), make_pair(transport_type, price));
+       // adj_list[to_lower(city2)].emplace_back(to_lower(city1), make_pair(transport_type, price));
+    }
+
+    // Function to build the graph data structure by parsing provided graph data file
+    void build_graph_from_file(const string& filename) {
+        ifstream file(filename);
+        if (!file.is_open()) {
+            cout << "Error: Unable to open file: " << filename << endl;
             return;
         }
 
-        unordered_set<string> visited;
-        queue<string> q;
-        q.push(start_city);
+        string line;
+        int line_number = 0; // Track the line number for error reporting
+        while (getline(file, line)) {
+            line_number++;
+            if (line.empty()) continue; // Skip empty lines
 
-        while (!q.empty()) {
-            string n = q.front();
-            q.pop();
+            // Split the line based on whitespace
+            istringstream iss(line);
+            vector<string> tokens;
+            string token;
+            while (iss >> token) {
+                tokens.push_back(token);
+            }
 
-            // Output n to the terminal
-            cout << n;
+            // Check if there are enough tokens
+            if (tokens.size() < 4) {
+                //cout << "Error: Not enough information in line " << line_number << ": " << line << endl;
+                continue;
+            }
 
-            // Traverse the connections of the current city
-            for (const auto& v : adj_list[n]) {
-                // Check if v is marked "unvisited"
-                if (visited.find(v.first) == visited.end()) {
-                    // Mark v as "visited"
-                    visited.insert(v.first);
-                    // Enqueue v on Q
-                    q.push(v.first);
+            // Extract city names
+            string city1 = tokens[0];
+            string city2 = tokens[2];
+
+            // Extract transportation details
+            for (size_t i = 3; i < tokens.size(); i += 2) {
+                string transport_type = tokens[i];
+                try {
+                    int price = stoi(tokens[i + 1]);
+                    add_edge(city1, city2, transport_type, price);
+                }
+                catch (const std::invalid_argument& e) {
+                    cout << "Error: Invalid price in line " << line_number << ": " << line << endl;
                 }
             }
-            if (!q.empty()) {
-                cout << " -> ";
-            }
         }
-        cout << endl;
+
+        file.close();
     }
 
-    void dfs(const string& start_city, unordered_set<string>& visited) {
-        cout << start_city;
 
-        visited.insert(start_city);
 
-        bool first_neighbor = true;
-        for (const auto& neighbor : adj_list[start_city]) {
-            if (visited.find(neighbor.first) == visited.end()) {
-                cout << " -> ";
-                dfs(neighbor.first, visited);
-            }
-        }
-    }
     void update(string source, string destination) {
         // 3ashan count all ways from source to destination
         int count = 0;
@@ -91,7 +100,7 @@ public:
             cout << "All trasportation from " << source << " to " << destination << " are:- \n";
             for (const auto& neighbor : adj_list[source]) {
                 if (neighbor.first == destination) {
-                    cout << t++ << "- " << neighbor.second.first << endl;
+                    cout << t++ << "- " << neighbor.second.first << " " << neighbor.second.second << endl;
                 }
             }
             bool done = false;
@@ -168,7 +177,56 @@ public:
             }
         }
     }
+    void bfs(const string& start_city) {
+        string lowercase_city = to_lower(start_city);
+        if (adj_list.find(lowercase_city) == adj_list.end()) {
+            cout << "Error: The entered city does not exist in the graph." << endl;
+            return;
+        }
+
+        unordered_set<string> visited;
+        queue<string> q;
+        q.push(start_city);
+
+        while (!q.empty()) {
+            string n = q.front();
+            q.pop();
+
+            // Output n to the terminal
+            cout << n;
+
+            // Traverse the connections of the current city
+            for (const auto& v : adj_list[n]) {
+                // Check if v is marked "unvisited"
+                if (visited.find(v.first) == visited.end()) {
+                    // Mark v as "visited"
+                    visited.insert(v.first);
+                    // Enqueue v on Q
+                    q.push(v.first);
+                }
+            }
+            if (!q.empty()) {
+                cout << " -> ";
+            }
+        }
+    }
+
+    // Function to perform depth-first search traversal
+    void dfs(const string& start_city, unordered_set<string>& visited) {
+        cout << start_city;
+
+        visited.insert(start_city);
+
+        bool first_neighbor = true;
+        for (const auto& neighbor : adj_list[start_city]) {
+            if (visited.find(neighbor.first) == visited.end()) {
+                cout << " -> ";
+                dfs(neighbor.first, visited);
+            }
+        }
+    }
 };
+
 void traverGraph(Graph transportation_graph) {
     string start_city;
     cout << "Enter the starting city: ";
@@ -181,15 +239,18 @@ void traverGraph(Graph transportation_graph) {
 
     if (algorithm_choice == "BFS") {
         transportation_graph.bfs(start_city);
+        cout << endl;
     }
     else if (algorithm_choice == "DFS") {
         unordered_set<string> visited;
         transportation_graph.dfs(start_city, visited);
+        cout << endl;
     }
     else {
         cout << "Invalid choice." << endl;
     }
 }
+
 void updateGraph(Graph& transportation_graph) {
     string source, destination;
     cout << "Enter the source city: ";
@@ -198,6 +259,7 @@ void updateGraph(Graph& transportation_graph) {
     cin >> destination;
     transportation_graph.update(source, destination);
 }
+
 void addEdgeToGraph(Graph& transportation_graph) {
     string source, destination;
     cout << "Enter the source city: ";
@@ -212,6 +274,7 @@ void addEdgeToGraph(Graph& transportation_graph) {
     cin >> price;
     transportation_graph.add_edge(source, destination, trans, price);
 }
+
 void deleteAnEdge(Graph& transportation_graph) {
     string source, destination;
     cout << "Enter the source city: ";
@@ -220,6 +283,7 @@ void deleteAnEdge(Graph& transportation_graph) {
     cin >> destination;
     transportation_graph.Delete(source, destination);
 }
+
 bool isLoggedIn()
 {
     string username, password;
@@ -243,6 +307,7 @@ bool isLoggedIn()
         return false;
     }
 }
+
 void ourSystem() {
     int choice;
 
@@ -300,50 +365,28 @@ void ourSystem() {
         }
     }
 }
-// Function to build the graph data structure by parsing provided graph data string
-void build_graph_from_file(const string& filename, Graph& graph) {
-    ifstream file(filename);
-    if (!file.is_open()) {
-        cout << "Error: Unable to open file: " << filename << endl;
-        return;
-    }
 
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) continue; // Skip empty lines
-
-        istringstream iss(line);
-        string city1, dash, city2, transport_type;
-        int price;
-        iss >> city1 >> dash >> city2 >> transport_type >> price;
-
-        // Add bidirectional connection between city1 and city2
-        graph.add_edge(city1, city2, transport_type, price);
-    }
-
-    file.close();
-}
 void write_graph_to_file(const string& filename, Graph& graph) {
-    ofstream outdata;
-    outdata.open(filename);
-    if (!outdata) {
+    ofstream outdata(filename, ios::trunc);
+    if (!outdata.is_open()) {
         cout << "Error: Unable to open file: " << filename << endl;
         return;
     }
-    for (const auto& item : graph.adj_list) {
-        outdata << item.first << " ";
-        for (int i = 0; i < item.second.size(); i++) {
-            outdata << item.second[i].first << " " << item.second[i].second.first;
-            outdata << " " << item.second[i].second.second << endl;
+
+    for (const auto& city_entry : graph.adj_list) {
+        for (const auto& connection : city_entry.second) {
+            outdata << city_entry.first << " - " << connection.first << " " << connection.second.first << " " << connection.second.second << endl;
         }
     }
+
     outdata.close();
 }
+
 int main() {
     ourSystem();
     Graph transportation_graph;
     string filename = "TransportationMap.txt";
-    build_graph_from_file(filename, transportation_graph);
+    transportation_graph.build_graph_from_file(filename);
     char choice = 'Y';
     while (choice == 'Y' || choice == 'y') {
         cout << "Enter 1 to traverse the transportation graph:-\n";
