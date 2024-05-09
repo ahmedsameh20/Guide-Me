@@ -8,6 +8,7 @@
 #include <string>
 #include <fstream> // reading and writing files 
 #include <sstream>
+#include<stack>
 using namespace std;
 
 // Function to convert string to lowercase
@@ -31,7 +32,7 @@ public:
     void add_edge(const string& city1, const string& city2, const string& transport_type, const int& price) {
         // Add bidirectional connection between city1 and city2
         adj_list[to_lower(city1)].emplace_back(to_lower(city2), make_pair(transport_type, price));
-       // adj_list[to_lower(city2)].emplace_back(to_lower(city1), make_pair(transport_type, price));
+        adj_list[to_lower(city2)].emplace_back(to_lower(city1), make_pair(transport_type, price));
     }
 
     // Function to build the graph data structure by parsing provided graph data file
@@ -177,54 +178,171 @@ public:
             }
         }
     }
+   
+
+    // Function to perform depth-first search traversal
+    void dfs(const string& start_city, unordered_set<string>& visited) {
+        string lowercase_start_city = to_lower(start_city);
+        if (adj_list.find(lowercase_start_city) == adj_list.end()) {
+            cout << "Error: The entered city does not exist in the graph." << endl;
+            return;
+        }
+
+        stack<string> s;
+        s.push(lowercase_start_city);
+
+        while (!s.empty()) {
+            string current_city = s.top();
+            s.pop();
+
+            if (visited.find(current_city) == visited.end()) {
+                cout << current_city << " -> ";
+                visited.insert(current_city);
+
+                // Sort neighbors alphabetically to ensure consistent traversal order
+                sort(adj_list[current_city].begin(), adj_list[current_city].end());
+
+                // Push neighbors onto stack in reverse order to maintain correct traversal order
+                for (auto it = adj_list[current_city].rbegin(); it != adj_list[current_city].rend(); ++it) {
+                    if (visited.find(it->first) == visited.end()) {
+                        s.push(it->first);
+                    }
+                }
+            }
+        }
+        cout << "End" << endl;
+    }
+
+
     void bfs(const string& start_city) {
-        string lowercase_city = to_lower(start_city);
-        if (adj_list.find(lowercase_city) == adj_list.end()) {
+        string lowercase_start_city = to_lower(start_city);
+        if (adj_list.find(lowercase_start_city) == adj_list.end()) {
             cout << "Error: The entered city does not exist in the graph." << endl;
             return;
         }
 
         unordered_set<string> visited;
         queue<string> q;
-        q.push(start_city);
+        q.push(lowercase_start_city);
 
         while (!q.empty()) {
-            string n = q.front();
+            string current_city = q.front();
             q.pop();
 
-            // Output n to the terminal
-            cout << n;
+            if (visited.find(current_city) == visited.end()) {
+                cout << current_city << " -> ";
+                visited.insert(current_city);
 
-            // Traverse the connections of the current city
-            for (const auto& v : adj_list[n]) {
-                // Check if v is marked "unvisited"
-                if (visited.find(v.first) == visited.end()) {
-                    // Mark v as "visited"
-                    visited.insert(v.first);
-                    // Enqueue v on Q
-                    q.push(v.first);
+                for (const auto& neighbor : adj_list[current_city]) {
+                    if (visited.find(neighbor.first) == visited.end()) {
+                        q.push(neighbor.first);
+                    }
                 }
             }
-            if (!q.empty()) {
-                cout << " -> ";
+        }
+        cout << "End" << endl;
+    }
+    bool is_complete() {
+        for (const auto& city_entry : adj_list) {
+            unordered_set<string> connected_cities;
+            for (const auto& connection : city_entry.second) {
+                connected_cities.insert(connection.first);
+            }
+
+            if (connected_cities.size() != adj_list.size() - 1) {
+                return false;
             }
         }
+        return true;
     }
-
-    // Function to perform depth-first search traversal
-    void dfs(const string& start_city, unordered_set<string>& visited) {
-        cout << start_city;
-
+    void dfs2(const string& start_city, const string& end_city, const int budget, unordered_set<string>& visited, vector<string>& path, vector<vector<string>>& paths, int& total_cost) {
         visited.insert(start_city);
+        path.push_back(start_city);
 
-        bool first_neighbor = true;
-        for (const auto& neighbor : adj_list[start_city]) {
-            if (visited.find(neighbor.first) == visited.end()) {
-                cout << " -> ";
-                dfs(neighbor.first, visited);
+        if (start_city == end_city) {
+            int current_cost = calculate_total_cost(path);
+            if (current_cost <= budget) {
+                paths.push_back(path);
+                total_cost = current_cost;
+            }
+        }
+        else {
+            for (const auto& neighbor : adj_list[start_city]) {
+                if (visited.find(neighbor.first) == visited.end()) {
+                    dfs2(neighbor.first, end_city, budget, visited, path, paths, total_cost);
+                    // Remove the last city from the path to explore other paths
+                    path.pop_back();
+                }
+            }
+        }
+
+        visited.erase(start_city);
+    }
+
+    void find_routes(const string& source, const string& destination, const int budget) {
+        vector<vector<string>> paths;
+        vector<string> path;
+        unordered_set<string> visited;
+        int total_cost = 0;
+
+        dfs2(source, destination, budget, visited, path, paths, total_cost);
+
+        if (paths.empty()) {
+            cout << "No routes found within the specified budget." << endl;
+        }
+        else {
+            cout << "The source is: " << source << endl;
+            cout << "The destination is: " << destination << endl;
+            cout << "Your budget: " << budget << endl;
+
+            // Sort paths by total cost
+            sort(paths.begin(), paths.end(), [&](const vector<string>& p1, const vector<string>& p2) {
+                int cost1 = calculate_total_cost(p1);
+                int cost2 = calculate_total_cost(p2);
+                return cost1 < cost2;
+                });
+
+            // Print unique paths
+            unordered_set<string> printed_paths;
+            for (const auto& p : paths) {
+                string path_string;
+                for (size_t i = 0; i < p.size() - 1; i++) {
+                    string current_city = p[i];
+                    string next_city = p[i + 1];
+                    for (const auto& neighbor : adj_list[current_city]) {
+                        if (neighbor.first == next_city) {
+                            path_string += current_city + " (" + neighbor.second.first + ") -> ";
+                            break;
+                        }
+                    }
+                }
+                path_string += p.back();
+                if (printed_paths.find(path_string) == printed_paths.end()) {
+                    printed_paths.insert(path_string);
+                    int current_cost = calculate_total_cost(p);
+                    cout << "Route: " << path_string << endl;
+                    cout << "Total cost: " << current_cost << endl;
+                }
             }
         }
     }
+
+
+    int calculate_total_cost(const vector<string>& path) {
+        int total_cost = 0;
+        for (size_t i = 0; i < path.size() - 1; i++) {
+            string current_city = path[i];
+            string next_city = path[i + 1];
+            for (const auto& neighbor : adj_list[current_city]) {
+                if (neighbor.first == next_city) {
+                    total_cost += neighbor.second.second;
+                    break;
+                }
+            }
+        }
+        return total_cost;
+    }
+
 };
 
 void traverGraph(Graph transportation_graph) {
@@ -282,6 +400,18 @@ void deleteAnEdge(Graph& transportation_graph) {
     cout << "Enter the destination city: ";
     cin >> destination;
     transportation_graph.Delete(source, destination);
+}
+
+void route(Graph& transportation_graph) {
+    string source, destination;
+    int budget;
+    cout << "Enter the source city: ";
+    cin >> source;
+    cout << "Enter the destination city: ";
+    cin >> destination;
+    cout << "Enter your budget: ";
+    cin >> budget;
+    transportation_graph.find_routes(source, destination, budget);
 }
 
 bool isLoggedIn()
@@ -393,6 +523,8 @@ int main() {
         cout << "Enter 2 to update the transportation graph:-\n";
         cout << "Enter 3 to Add an edge:-\n";
         cout << "Enter 4 to delete an edge:-\n";
+        cout << "Enter 5 to check if the transportation map is complete:-\n";
+        cout << "Enter 6 to find routes between two cities:-\n";
         int c;
         cin >> c;
         if (c == 1) {
@@ -406,6 +538,19 @@ int main() {
         }
         else if (c == 4) {
             deleteAnEdge(transportation_graph);
+        }
+        else if (c == 5)
+        { 
+            if (transportation_graph.is_complete()) {
+                cout << "The transportation map is complete." << endl;
+            }
+            else {
+                cout << "The transportation map is not complete." << endl;
+            }
+        }
+        else if (c == 6)
+        {
+            route(transportation_graph);
         }
         else {
             cout << "Invalid choice.\n";
