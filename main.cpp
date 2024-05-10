@@ -9,6 +9,7 @@
 #include <fstream> // reading and writing files 
 #include <sstream>
 #include<stack>
+#include <numeric>
 using namespace std;
 
 // Function to convert string to lowercase
@@ -178,7 +179,7 @@ public:
             }
         }
     }
-   
+
 
     // Function to perform depth-first search traversal
     void dfs(const string& start_city, unordered_set<string>& visited) {
@@ -299,14 +300,13 @@ public:
             // Find the edge between the current city and the next city
             for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
                 if (neighbor.first == next_city) {
-                    total_cost += neighbor.second.second; // Add the cost of the edge to the total cost
+                    total_cost += neighbor.second.second;
                     break;
                 }
             }
         }
         return total_cost;
     }
-
     void find_routes(const string& source, const string& destination, const int budget, const Graph& adj_list) {
         vector<vector<string>> paths;
         vector<string> path;
@@ -353,20 +353,32 @@ public:
 
                     for (const auto& route : routes) {
                         path_string = source;
+                        int route_cost = 0; // Total cost for this route
                         for (size_t i = 0; i < p.size() - 1; i++) {
+                            string current_city = p[i];
+                            string next_city = p[i + 1];
+                            // Find the transportation cost for this segment
+                            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
+                                if (neighbor.first == next_city && neighbor.second.first == route[i]) {
+                                    route_cost += neighbor.second.second;
+                                    break;
+                                }
+                            }
                             path_string += " (" + route[i] + ") -> " + p[i + 1];
                         }
-
-                        if (printed_paths.find(path_string) == printed_paths.end()) {
-                            printed_paths.insert(path_string);
-                            cout << "Route: " << path_string << endl;
-                            cout << "Total cost: " << current_cost << endl;
+                        if (route_cost <= budget) {
+                            if (printed_paths.find(path_string) == printed_paths.end()) {
+                                printed_paths.insert(path_string);
+                                cout << "Route: " << path_string << endl;
+                                cout << "Total cost: " << route_cost << endl;
+                            }
                         }
                     }
                 }
             }
         }
     }
+
 };
 
 void traverGraph(Graph transportation_graph) {
@@ -435,7 +447,7 @@ void route(Graph& transportation_graph) {
     cin >> destination;
     cout << "Enter your budget: ";
     cin >> budget;
-    transportation_graph.find_routes(source, destination, budget , transportation_graph);
+    transportation_graph.find_routes(source, destination, budget, transportation_graph);
 }
 
 bool isLoggedIn()
