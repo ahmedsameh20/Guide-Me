@@ -255,7 +255,7 @@ public:
         }
         return true;
     }
-    
+    // Updated DFS function to find paths
     void dfs2(const string& current_city, const string& destination, const int budget, unordered_set<string>& visited,
         vector<string>& path, vector<vector<string>>& paths, int& total_cost, const Graph& adj_list) {
         visited.insert(current_city);
@@ -276,8 +276,37 @@ public:
         visited.erase(current_city);
         path.pop_back();
     }
+    // Function to generate all possible routes by combining transportation types
+    void generate_routes(int index, const vector<vector<string>>& transport_types, vector<string> current_route, vector<vector<string>>& routes) {
+        if (index == transport_types.size()) {
+            routes.push_back(current_route);
+            return;
+        }
 
-    
+        for (const auto& transport_type : transport_types[index]) {
+            current_route.push_back(transport_type);
+            generate_routes(index + 1, transport_types, current_route, routes);
+            current_route.pop_back();
+        }
+    }
+
+    int calculate_total_cost(const vector<string>& path, const Graph& adj_list) {
+        int total_cost = 0;
+        for (size_t i = 0; i < path.size() - 1; i++) {
+            string current_city = path[i];
+            string next_city = path[i + 1];
+
+            // Find the edge between the current city and the next city
+            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
+                if (neighbor.first == next_city) {
+                    total_cost += neighbor.second.second; // Add the cost of the edge to the total cost
+                    break;
+                }
+            }
+        }
+        return total_cost;
+    }
+
     void find_routes(const string& source, const string& destination, const int budget, const Graph& adj_list) {
         vector<vector<string>> paths;
         vector<string> path;
@@ -299,48 +328,45 @@ public:
             for (const auto& p : paths) {
                 string path_string;
                 int current_cost = calculate_total_cost(p, adj_list);
-
+                vector<vector<string>> transport_types; // Store transport types for each edge
                 // Check if the path exceeds the budget
                 if (current_cost <= budget) {
+                    path_string = source;
                     for (size_t i = 0; i < p.size() - 1; i++) {
                         string current_city = p[i];
                         string next_city = p[i + 1];
-
+                        // Get all possible transportation types for the edge
+                        vector<string> edge_transport_types;
                         for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
                             if (neighbor.first == next_city) {
-                                string transport_type = neighbor.second.first;
-                                path_string += current_city + " (" + transport_type + ") -> ";
-                                break;
+                                edge_transport_types.push_back(neighbor.second.first);
                             }
                         }
+
+                        // Store the transportation types for the edge
+                        transport_types.push_back(edge_transport_types);
                     }
 
-                    path_string += p.back();
-                    if (printed_paths.find(path_string) == printed_paths.end()) {
-                        printed_paths.insert(path_string);
-                        cout << "Route: " << path_string << endl;
-                        cout << "Total cost: " << current_cost << endl;
+                    // Generate all possible routes by combining transportation types
+                    vector<vector<string>> routes;
+                    generate_routes(0, transport_types, {}, routes);
+
+                    for (const auto& route : routes) {
+                        path_string = source;
+                        for (size_t i = 0; i < p.size() - 1; i++) {
+                            path_string += " (" + route[i] + ") -> " + p[i + 1];
+                        }
+
+                        if (printed_paths.find(path_string) == printed_paths.end()) {
+                            printed_paths.insert(path_string);
+                            cout << "Route: " << path_string << endl;
+                            cout << "Total cost: " << current_cost << endl;
+                        }
                     }
                 }
             }
         }
     }
-
-    int calculate_total_cost(const vector<string>& path, const Graph& adj_list) {
-        int total_cost = 0;
-        for (size_t i = 0; i < path.size() - 1; i++) {
-            string current_city = path[i];
-            string next_city = path[i + 1];
-            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
-                if (neighbor.first == next_city) {
-                    total_cost += neighbor.second.second;
-                    break;
-                }
-            }
-        }
-        return total_cost;
-    }
-
 };
 
 void traverGraph(Graph transportation_graph) {
