@@ -255,37 +255,36 @@ public:
         }
         return true;
     }
-    void dfs2(const string& start_city, const string& end_city, const int budget, unordered_set<string>& visited, vector<string>& path, vector<vector<string>>& paths, int& total_cost) {
-        visited.insert(start_city);
-        path.push_back(start_city);
+    
+    void dfs2(const string& current_city, const string& destination, const int budget, unordered_set<string>& visited,
+        vector<string>& path, vector<vector<string>>& paths, int& total_cost, const Graph& adj_list) {
+        visited.insert(current_city);
+        path.push_back(current_city);
 
-        if (start_city == end_city) {
-            int current_cost = calculate_total_cost(path);
-            if (current_cost <= budget) {
-                paths.push_back(path);
-                total_cost = current_cost;
-            }
+        if (current_city == destination) {
+            paths.push_back(path);
+            total_cost += calculate_total_cost(path, adj_list);
         }
         else {
-            for (const auto& neighbor : adj_list[start_city]) {
+            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
                 if (visited.find(neighbor.first) == visited.end()) {
-                    dfs2(neighbor.first, end_city, budget, visited, path, paths, total_cost);
-                    // Remove the last city from the path to explore other paths
-                    path.pop_back();
+                    dfs2(neighbor.first, destination, budget, visited, path, paths, total_cost, adj_list);
                 }
             }
         }
 
-        visited.erase(start_city);
+        visited.erase(current_city);
+        path.pop_back();
     }
 
-    void find_routes(const string& source, const string& destination, const int budget) {
+    
+    void find_routes(const string& source, const string& destination, const int budget, const Graph& adj_list) {
         vector<vector<string>> paths;
         vector<string> path;
         unordered_set<string> visited;
         int total_cost = 0;
 
-        dfs2(source, destination, budget, visited, path, paths, total_cost);
+        dfs2(source, destination, budget, visited, path, paths, total_cost, adj_list);
 
         if (paths.empty()) {
             cout << "No routes found within the specified budget." << endl;
@@ -295,45 +294,44 @@ public:
             cout << "The destination is: " << destination << endl;
             cout << "Your budget: " << budget << endl;
 
-            // Sort paths by total cost
-            sort(paths.begin(), paths.end(), [&](const vector<string>& p1, const vector<string>& p2) {
-                int cost1 = calculate_total_cost(p1);
-                int cost2 = calculate_total_cost(p2);
-                return cost1 < cost2;
-                });
-
-            // Print unique paths
+            // Print all unique paths
             unordered_set<string> printed_paths;
             for (const auto& p : paths) {
                 string path_string;
-                for (size_t i = 0; i < p.size() - 1; i++) {
-                    string current_city = p[i];
-                    string next_city = p[i + 1];
-                    for (const auto& neighbor : adj_list[current_city]) {
-                        if (neighbor.first == next_city) {
-                            path_string += current_city + " (" + neighbor.second.first + ") -> ";
-                            break;
+                int current_cost = calculate_total_cost(p, adj_list);
+
+                // Check if the path exceeds the budget
+                if (current_cost <= budget) {
+                    for (size_t i = 0; i < p.size() - 1; i++) {
+                        string current_city = p[i];
+                        string next_city = p[i + 1];
+
+                        for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
+                            if (neighbor.first == next_city) {
+                                string transport_type = neighbor.second.first;
+                                path_string += current_city + " (" + transport_type + ") -> ";
+                                break;
+                            }
                         }
                     }
-                }
-                path_string += p.back();
-                if (printed_paths.find(path_string) == printed_paths.end()) {
-                    printed_paths.insert(path_string);
-                    int current_cost = calculate_total_cost(p);
-                    cout << "Route: " << path_string << endl;
-                    cout << "Total cost: " << current_cost << endl;
+
+                    path_string += p.back();
+                    if (printed_paths.find(path_string) == printed_paths.end()) {
+                        printed_paths.insert(path_string);
+                        cout << "Route: " << path_string << endl;
+                        cout << "Total cost: " << current_cost << endl;
+                    }
                 }
             }
         }
     }
 
-
-    int calculate_total_cost(const vector<string>& path) {
+    int calculate_total_cost(const vector<string>& path, const Graph& adj_list) {
         int total_cost = 0;
         for (size_t i = 0; i < path.size() - 1; i++) {
             string current_city = path[i];
             string next_city = path[i + 1];
-            for (const auto& neighbor : adj_list[current_city]) {
+            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
                 if (neighbor.first == next_city) {
                     total_cost += neighbor.second.second;
                     break;
@@ -411,7 +409,7 @@ void route(Graph& transportation_graph) {
     cin >> destination;
     cout << "Enter your budget: ";
     cin >> budget;
-    transportation_graph.find_routes(source, destination, budget);
+    transportation_graph.find_routes(source, destination, budget , transportation_graph);
 }
 
 bool isLoggedIn()
@@ -540,7 +538,7 @@ int main() {
             deleteAnEdge(transportation_graph);
         }
         else if (c == 5)
-        { 
+        {
             if (transportation_graph.is_complete()) {
                 cout << "The transportation map is complete." << endl;
             }
