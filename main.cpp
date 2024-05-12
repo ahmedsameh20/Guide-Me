@@ -9,6 +9,7 @@
 #include <fstream> // reading and writing files 
 #include <sstream>
 #include<stack>
+#include <conio.h>
 #include <numeric>
 using namespace std;
 
@@ -86,11 +87,14 @@ public:
 
 
 
-    void update(string source, string destination) {
-        // 3ashan count all ways from source to destination
+    void update(string source, string destination) 
+    {
+        // To count all ways from source to destination
         int count = 0;
-        for (const auto& neighbor : adj_list[source]) {
-            if (neighbor.first == destination) {
+        for (const auto& neighbor : adj_list[source]) 
+        {
+            if (neighbor.first == destination) 
+            {
                 count++;
             }
         }
@@ -108,11 +112,13 @@ public:
             bool done = false;
             string newTrans;
             int num, price;
-            while (!done) {
+            while (!done) 
+            {
                 cout << "Enter trasportation number to update it:-\n";
                 cin >> num;
                 t = 1;
-                if (num <= 0 || num > count) {
+                if (num <= 0 || num > count) 
+                {
                     cout << "Invalid choice\n";
                 }
                 else {
@@ -120,8 +126,10 @@ public:
                     cin >> newTrans;
                     cout << "Enter the price:-\n";
                     cin >> price;
-                    for (auto& neighbor : adj_list[source]) {
-                        if (neighbor.first == destination) {
+                    for (auto& neighbor : adj_list[source]) 
+                    {
+                        if (neighbor.first == destination) 
+                        {
                             if (num == t) {
                                 neighbor.second.first = newTrans;
                                 neighbor.second.second = price;
@@ -291,15 +299,19 @@ public:
         }
     }
 
-    int calculate_total_cost(const vector<string>& path, const Graph& adj_list) {
+    int calculate_total_cost(const vector<string>& path, const Graph& adj_list) 
+    {
         int total_cost = 0;
-        for (size_t i = 0; i < path.size() - 1; i++) {
+        for (size_t i = 0; i < path.size() - 1; i++) 
+        {
             string current_city = path[i];
             string next_city = path[i + 1];
 
             // Find the edge between the current city and the next city
-            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
-                if (neighbor.first == next_city) {
+            for (const auto& neighbor : adj_list.adj_list.at(current_city)) 
+            {
+                if (neighbor.first == next_city) 
+                {
                     total_cost += neighbor.second.second;
                     break;
                 }
@@ -315,30 +327,37 @@ public:
 
         dfs2(source, destination, budget, visited, path, paths, total_cost, adj_list);
 
-        if (paths.empty()) {
+        if (paths.empty()) 
+        {
             cout << "No routes found within the specified budget." << endl;
         }
-        else {
+        else 
+        {
             cout << "The source is: " << source << endl;
             cout << "The destination is: " << destination << endl;
             cout << "Your budget: " << budget << endl;
 
             // Print all unique paths
             unordered_set<string> printed_paths;
-            for (const auto& p : paths) {
+            for (const auto& p : paths) 
+            {
                 string path_string;
                 int current_cost = calculate_total_cost(p, adj_list);
                 vector<vector<string>> transport_types; // Store transport types for each edge
                 // Check if the path exceeds the budget
-                if (current_cost <= budget) {
+                if (current_cost <= budget) 
+                {
                     path_string = source;
-                    for (size_t i = 0; i < p.size() - 1; i++) {
+                    for (size_t i = 0; i < p.size() - 1; i++)
+                    {
                         string current_city = p[i];
                         string next_city = p[i + 1];
                         // Get all possible transportation types for the edge
                         vector<string> edge_transport_types;
-                        for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
-                            if (neighbor.first == next_city) {
+                        for (const auto& neighbor : adj_list.adj_list.at(current_city))
+                        {
+                            if (neighbor.first == next_city) 
+                            {
                                 edge_transport_types.push_back(neighbor.second.first);
                             }
                         }
@@ -358,20 +377,21 @@ public:
                             string current_city = p[i];
                             string next_city = p[i + 1];
                             // Find the transportation cost for this segment
-                            for (const auto& neighbor : adj_list.adj_list.at(current_city)) {
-                                if (neighbor.first == next_city && neighbor.second.first == route[i]) {
+                            for (const auto& neighbor : adj_list.adj_list.at(current_city)) 
+                            {
+                                if (neighbor.first == next_city && neighbor.second.first == route[i]) 
+                                {
                                     route_cost += neighbor.second.second;
                                     break;
                                 }
                             }
                             path_string += " (" + route[i] + ") -> " + p[i + 1];
                         }
-                        if (route_cost <= budget) {
-                            if (printed_paths.find(path_string) == printed_paths.end()) {
-                                printed_paths.insert(path_string);
-                                cout << "Route: " << path_string << endl;
-                                cout << "Total cost: " << route_cost << endl;
-                            }
+
+                        if (printed_paths.find(path_string) == printed_paths.end()) {
+                            printed_paths.insert(path_string);
+                            cout << "Route: " << path_string << endl;
+                            cout << "Total cost: " << route_cost << endl;
                         }
                     }
                 }
@@ -457,8 +477,23 @@ bool isLoggedIn()
 
     cout << "Enter a username: ";
     cin >> username;
+
     cout << "Enter a password: ";
-    cin >> password;
+    char ch;
+    password = "";
+    while ((ch = _getch()) != '\r') { // Loop until Enter is pressed
+        if (ch == '\b') { // Handle backspace
+            if (!password.empty()) {
+                cout << "\b \b"; // Move cursor back, erase character, move cursor back again
+                password.pop_back(); // Remove last character from password
+            }
+        }
+        else {
+            cout << '*'; // Print asterisk
+            password += ch; // Append character to password
+        }
+    }
+    cout << endl;
 
     ifstream read(username + ".txt"); // ifstream reads a file 
     getline(read, un); // reads the username 
@@ -473,7 +508,6 @@ bool isLoggedIn()
         return false;
     }
 }
-
 void ourSystem() {
     int choice;
 
@@ -498,7 +532,21 @@ void ourSystem() {
         cout << "Select a username: ";
         cin >> username;
         cout << "Select a password: ";
-        cin >> password;
+        char ch;
+        password = "";
+        while ((ch = _getch()) != '\r') { // Loop until Enter is pressed
+            if (ch == '\b') { // Handle backspace
+                if (!password.empty()) {
+                    cout << "\b \b"; // Move cursor back, erase character, move cursor back again
+                    password.pop_back(); // Remove last character from password
+                }
+            }
+            else {
+                cout << '*'; // Print asterisk
+                password += ch; // Append character to password
+            }
+        }
+        cout << endl;
 
         ofstream file; // ofstream creates a file
         file.open(username + ".txt");
@@ -533,15 +581,19 @@ void ourSystem() {
 }
 
 void write_graph_to_file(const string& filename, Graph& graph) {
+    vector <pair <string , string>> isprinted;
+
     ofstream outdata(filename, ios::trunc);
     if (!outdata.is_open()) {
         cout << "Error: Unable to open file: " << filename << endl;
         return;
     }
-
+      
     for (const auto& city_entry : graph.adj_list) {
         for (const auto& connection : city_entry.second) {
             outdata << city_entry.first << " - " << connection.first << " " << connection.second.first << " " << connection.second.second << endl;
+            isprinted.push_back(make_pair(city_entry.first, connection.first));
+
         }
     }
 
