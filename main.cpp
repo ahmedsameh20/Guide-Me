@@ -8,7 +8,7 @@
 #include <string>
 #include <fstream> // reading and writing files 
 #include <sstream>
-#include<stack>
+#include <stack>
 #include <conio.h>
 #include <numeric>
 using namespace std;
@@ -111,7 +111,8 @@ public:
             }
             bool done = false;
             string newTrans;
-            int num, price;
+            int num;
+            int price;
             while (!done) 
             {
                 cout << "Enter trasportation number to update it:-\n";
@@ -122,10 +123,24 @@ public:
                     cout << "Invalid choice\n";
                 }
                 else {
-                    cout << "Enter the new trasportation:-\n";
-                    cin >> newTrans;
-                    cout << "Enter the price:-\n";
-                    cin >> price;
+                    cout << "Enter the transport_type: ";
+                    cin.ignore(); // Ignore any remaining newline characters
+                    getline(cin, newTrans);
+                    while (newTrans.empty() || std::all_of(newTrans.begin(), newTrans.end(), ::isdigit)) {
+                        if (newTrans.empty()) {
+                            cout << "Transport type cannot be empty. Please enter a valid transport type: ";
+                        }
+                        else {
+                            cout << "Transport type cannot be a number. Please enter a valid transport type: ";
+                        }
+                        getline(cin, newTrans);
+                    }
+                    cout << "Enter the transport_price: ";
+                    while (!(cin >> price) || price <= 0) {
+                        cout << "Invalid input. Please enter a valid positive integer for the price: ";
+                        cin.clear();
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    }
                     for (auto& neighbor : adj_list[source]) 
                     {
                         if (neighbor.first == destination) 
@@ -146,50 +161,50 @@ public:
     }
     void Delete(string source, string destination) {
         int count = 0;
+
+        vector<int> appearances;// to collect the indeces where the wanted destination appears
+        int ind = 0;
         for (const auto& neighbor : adj_list[source]) {
             if (neighbor.first == destination) {
                 count++;
+                appearances.push_back(ind);
             }
+
+            ind++;
         }
         if (count == 0)
             cout << "No direct path from " << source << " to " << destination << endl;
         else {
             int t = 1;
-            cout << "All trasportation from " << source << " to " << destination << "are:- \n";
+            cout << "All transportation from " << source << " to " << destination << " are:- \n";
             for (const auto& neighbor : adj_list[source]) {
                 if (neighbor.first == destination) {
                     cout << t++ << "- " << neighbor.second.first << " " << neighbor.second.second << endl;
                 }
             }
             bool done = false;
-            string newTrans;
             int num;
             while (!done) {
-                cout << "Enter trasportation number to delete it:-\n";
+                cout << "Enter transportation number to delete it:-\n";
                 cin >> num;
                 t = 1;
                 if (num <= 0 || num > count) {
                     cout << "Invalid choice\n";
                 }
                 else {
-                    for (auto& neighbor : adj_list[source]) {
-                        if (neighbor.first == destination) {
-                            if (num == t) {
-                                adj_list[source].erase(adj_list[source].begin() + (t - 1));
-                                cout << "Done.\n";
-                                done = true;
-                                break;
-                            }
-                            t++;
+                    for (int appearance : appearances) {
+                        if (t == num) {
+                            adj_list[source].erase(adj_list[source].begin() + appearance);
+                            cout << "Done.\n";
+                            done = true;
+                            break;
                         }
+                        t++;
                     }
                 }
             }
         }
     }
-
-
-    // Function to perform depth-first search traversal
     void dfs(const string& start_city, unordered_set<string>& visited) {
         string lowercase_start_city = to_lower(start_city);
         if (adj_list.find(lowercase_start_city) == adj_list.end()) {
@@ -319,7 +334,8 @@ public:
         }
         return total_cost;
     }
-    void find_routes(const string& source, const string& destination, const int budget, const Graph& adj_list) {
+    void find_routes(const string& source, const string& destination, const int budget, const Graph& adj_list) 
+    {
         vector<vector<string>> paths;
         vector<string> path;
         unordered_set<string> visited;
@@ -387,11 +403,12 @@ public:
                             }
                             path_string += " (" + route[i] + ") -> " + p[i + 1];
                         }
-
-                        if (printed_paths.find(path_string) == printed_paths.end()) {
-                            printed_paths.insert(path_string);
-                            cout << "Route: " << path_string << endl;
-                            cout << "Total cost: " << route_cost << endl;
+                        if (route_cost <= budget) {
+                            if (printed_paths.find(path_string) == printed_paths.end()) {
+                                printed_paths.insert(path_string);
+                                cout << "Route: " << path_string << endl;
+                                cout << "Total cost: " << route_cost << endl;
+                            }
                         }
                     }
                 }
@@ -404,69 +421,239 @@ public:
 void traverGraph(Graph transportation_graph) {
     string start_city;
     cout << "Enter the starting city: ";
-    cin >> start_city;
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, start_city);
+    while (start_city.empty() || std::all_of(start_city.begin(), start_city.end(), ::isdigit)) {
+        if (start_city.empty()) {
+            cout << "start_city cannot be empty. Please enter a valid start_city: ";
+        }
+        else {
+            cout << "start_city cannot be a number. Please enter a valid start_city: ";
+        }
+        getline(cin, start_city);
+    }
     start_city = to_lower(start_city);
 
     string algorithm_choice;
-    cout << "Choose an algorithm (BFS or DFS): ";
-    cin >> algorithm_choice;
+    while (true) {
+        cout << "Choose an algorithm (BFS or DFS): ";
+        getline(cin, algorithm_choice);
 
-    if (algorithm_choice == "BFS") {
-        transportation_graph.bfs(start_city);
-        cout << endl;
+        // Check if the input is empty or consists of only digits
+        if (algorithm_choice.empty() || std::all_of(algorithm_choice.begin(), algorithm_choice.end(), ::isdigit)) {
+            if (algorithm_choice.empty()) {
+                cout << "Algorithm cannot be empty. Please enter a valid algorithm: ";
+            }
+            else {
+                cout << "Algorithm cannot be a number. Please enter a valid algorithm: ";
+            }
+        }
+        else {
+            // Convert the input to lowercase for case-insensitive comparison
+            transform(algorithm_choice.begin(), algorithm_choice.end(), algorithm_choice.begin(), ::tolower);
+
+            // Check if the input is either "bfs" or "dfs"
+            if (algorithm_choice == "bfs") {
+                transportation_graph.bfs(start_city);
+                cout << endl;
+                string next_action2;
+                cout << "Choose the next algorithm to run (DFS) or enter any other key to exit: ";
+                getline(cin, next_action2);
+
+                // Convert the input to lowercase for case-insensitive comparison
+                transform(next_action2.begin(), next_action2.end(), next_action2.begin(), ::tolower);
+
+                if (next_action2 == "dfs") {
+                    unordered_set<string> visited;
+                    transportation_graph.dfs(start_city, visited);
+                    cout << endl;
+                    break;
+                }
+                else {
+                    break; // Exit the loop if the user chooses to exit
+                } 
+            }
+            else if (algorithm_choice == "dfs") {
+                unordered_set<string> visited;
+                transportation_graph.dfs(start_city, visited);
+                cout << endl;
+
+                // After running DFS, prompt the user for further action
+                string next_action;
+                cout << "Choose the next algorithm to run (BFS) or enter any other key to exit: ";
+                getline(cin, next_action);
+
+                // Convert the input to lowercase for case-insensitive comparison
+                transform(next_action.begin(), next_action.end(), next_action.begin(), ::tolower);
+
+                if (next_action == "bfs") {
+                    transportation_graph.bfs(start_city);
+                    cout << endl;
+                    break;
+                }
+                else {
+                    break; // Exit the loop if the user chooses to exit
+                }
+            }
+            else {
+                cout << "Invalid choice. Please enter either 'BFS' or 'DFS'." << endl;
+                continue; // Restart the loop to ask for input again
+            }
+        }
     }
-    else if (algorithm_choice == "DFS") {
-        unordered_set<string> visited;
-        transportation_graph.dfs(start_city, visited);
-        cout << endl;
-    }
-    else {
-        cout << "Invalid choice." << endl;
-    }
+
 }
 
 void updateGraph(Graph& transportation_graph) {
     string source, destination;
     cout << "Enter the source city: ";
-    cin >> source;
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, source);
+    while (source.empty() || std::all_of(source.begin(), source.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Source cannot be empty. Please enter a valid source: ";
+        }
+        else {
+            cout << "Source cannot be a number. Please enter a valid source: ";
+        }
+        getline(cin, source);
+    }
     cout << "Enter the destination city: ";
-    cin >> destination;
+    getline(cin, destination);
+    while (destination.empty() || std::all_of(destination.begin(), destination.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Destination cannot be empty. Please enter a valid destination: ";
+        }
+        else {
+            cout << "Destination cannot be a number. Please enter a valid destination: ";
+        }
+        getline(cin, destination);
+    }
     transportation_graph.update(source, destination);
 }
 
 void addEdgeToGraph(Graph& transportation_graph) {
+    int count = 0;
     string source, destination;
     cout << "Enter the source city: ";
-    cin >> source;
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, source);
+    while (source.empty() || std::all_of(source.begin(), source.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Source cannot be empty. Please enter a valid source: ";
+        }
+        else {
+            cout << "Source cannot be a number. Please enter a valid source: ";
+        }
+        getline(cin, source);
+    }
     cout << "Enter the destination city: ";
-    cin >> destination;
-    cout << "Enter the transport_type: ";
+    getline(cin, destination);
+    while (destination.empty() || std::all_of(destination.begin(), destination.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Destination cannot be empty. Please enter a valid destination: ";
+        }
+        else {
+            cout << "Destination cannot be a number. Please enter a valid destination: ";
+        }
+        getline(cin, destination);
+    }
     string trans;
-    cin >> trans;
-    cout << "Enter the transport_price: ";
+    cout << "Enter the transport_type: ";
+    getline(cin, trans);
+    while (trans.empty() || std::all_of(trans.begin(), trans.end(), ::isdigit)) {
+        if (trans.empty()) {
+            cout << "Transport type cannot be empty. Please enter a valid transport type: ";
+        }
+        else {
+            cout << "Transport type cannot be a number. Please enter a valid transport type: ";
+        }
+        getline(cin, trans);
+    }
+
     int price;
-    cin >> price;
+    cout << "Enter the transport_price: ";
+    while (!(cin >> price) || price <= 0) {
+        cout << "Invalid input. Please enter a valid positive integer for the price: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+
     transportation_graph.add_edge(source, destination, trans, price);
 }
+
+
 
 void deleteAnEdge(Graph& transportation_graph) {
     string source, destination;
     cout << "Enter the source city: ";
-    cin >> source;
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, source);
+    while (source.empty() || std::all_of(source.begin(), source.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Source cannot be empty. Please enter a valid source: ";
+        }
+        else {
+            cout << "Source cannot be a number. Please enter a valid source: ";
+        }
+        getline(cin, source);
+    }
     cout << "Enter the destination city: ";
-    cin >> destination;
+    getline(cin, destination);
+    while (destination.empty() || std::all_of(destination.begin(), destination.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Destination cannot be empty. Please enter a valid destination: ";
+        }
+        else {
+            cout << "Destination cannot be a number. Please enter a valid destination: ";
+        }
+        getline(cin, destination);
+    }
     transportation_graph.Delete(source, destination);
 }
 
-void route(Graph& transportation_graph) {
+void route(Graph& transportation_graph, Graph& graph) {
     string source, destination;
     int budget;
     cout << "Enter the source city: ";
-    cin >> source;
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, source);
+    while (source.empty() || std::all_of(source.begin(), source.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Source cannot be empty. Please enter a valid source: ";
+        }
+        else {
+            cout << "Source cannot be a number. Please enter a valid source: ";
+        }
+        getline(cin, source);
+    }
     cout << "Enter the destination city: ";
-    cin >> destination;
+    getline(cin, destination);
+    while (destination.empty() || std::all_of(destination.begin(), destination.end(), ::isdigit)) {
+        if (source.empty()) {
+            cout << "Destination cannot be empty. Please enter a valid destination: ";
+        }
+        else {
+            cout << "Destination cannot be a number. Please enter a valid destination: ";
+        }
+        getline(cin, destination);
+    }
+    int count = 0;
+    for (const auto& neighbor : graph.adj_list)
+    {
+        if (neighbor.first == destination)
+        {
+            count++;
+        }
+    }
+    if (count == 0)
+        cout << "No direct path from " << source << " to " << destination << endl;
     cout << "Enter your budget: ";
-    cin >> budget;
+    while (!(cin >> budget) || budget <= 0) {
+        cout << "Invalid input. Please enter a valid positive integer for the budget: ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
     transportation_graph.find_routes(source, destination, budget, transportation_graph);
 }
 
@@ -475,10 +662,19 @@ bool isLoggedIn()
     string username, password;
     string un, pw; // comparison strings
 
-    cout << "Enter a username: ";
-    cin >> username;
-
-    cout << "Enter a password: ";
+    cout << "Enter your username: ";
+    cin.ignore(); // Ignore any remaining newline characters
+    getline(cin, username);
+    while (username.empty() || std::all_of(username.begin(), username.end(), ::isdigit)) {
+        if (username.empty()) {
+            cout << "Username cannot be empty. Please enter a valid username: ";
+        }
+        else {
+            cout << "Username cannot be a number. Please enter a valid username: ";
+        }
+        getline(cin, username);
+    }
+    cout << "Enter your password: ";
     char ch;
     password = "";
     while ((ch = _getch()) != '\r') { // Loop until Enter is pressed
@@ -517,11 +713,27 @@ void ourSystem() {
     cout << endl;
     cout << "-------------------------------" << endl;
     cout << endl;
-    cout << "1. Register" << endl;
-    cout << "2. Login" << endl;
-    cout << endl;
-    cout << "Your choice: ";
-    cin >> choice;
+
+    // Input validation loop
+    while (true) {
+        cout << "1. Register" << endl;
+        cout << "2. Login" << endl;
+        cout << endl;
+        cout << "Your choice: ";
+        cin >> choice;
+
+        if (cin.fail()) { // Check if input is not an integer
+            cout << "Invalid input. Please enter a number." << endl;
+            cin.clear(); // Clear the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Discard invalid input
+        }
+        else if (choice != 1 && choice != 2) { // Check if input is not 1 or 2
+            cout << "Invalid choice. Please enter 1 or 2." << endl;
+        }
+        else {
+            break; // Valid input, exit the loop
+        }
+    }
 
     if (choice == 1)
     {
@@ -529,9 +741,19 @@ void ourSystem() {
 
         cout << "Registration: " << endl;
         cout << endl;
-        cout << "Select a username: ";
-        cin >> username;
-        cout << "Select a password: ";
+        cout << "Select your username: ";
+        cin.ignore(); // Ignore any remaining newline characters
+        getline(cin, username);
+        while (username.empty() || std::all_of(username.begin(), username.end(), ::isdigit)) {
+            if (username.empty()) {
+                cout << "Username cannot be empty. Please enter a valid username: ";
+            }
+            else {
+                cout << "Username cannot be a number. Please enter a valid username: ";
+            }
+            getline(cin, username);
+        }
+        cout << "Select your password: ";
         char ch;
         password = "";
         while ((ch = _getch()) != '\r') { // Loop until Enter is pressed
@@ -581,20 +803,24 @@ void ourSystem() {
 }
 
 void write_graph_to_file(const string& filename, Graph& graph) {
-    vector <pair <string , string>> isprinted;
+    vector <string> isprinted;
 
     ofstream outdata(filename, ios::trunc);
     if (!outdata.is_open()) {
         cout << "Error: Unable to open file: " << filename << endl;
         return;
     }
-      
+
     for (const auto& city_entry : graph.adj_list) {
         for (const auto& connection : city_entry.second) {
+            if (find(isprinted.begin(), isprinted.end(), connection.first) != isprinted.end()) {
+                continue;
+            }
             outdata << city_entry.first << " - " << connection.first << " " << connection.second.first << " " << connection.second.second << endl;
-            isprinted.push_back(make_pair(city_entry.first, connection.first));
+
 
         }
+        isprinted.push_back(city_entry.first);
     }
 
     outdata.close();
@@ -638,7 +864,7 @@ int main() {
         }
         else if (c == 6)
         {
-            route(transportation_graph);
+            route(transportation_graph, transportation_graph);
         }
         else {
             cout << "Invalid choice.\n";
